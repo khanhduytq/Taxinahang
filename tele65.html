@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taxi Khánh Duy</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #ffe6e6;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #cc0000;
+        }
+        .address {
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .address a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        .price-check, .booking-info, .booking-history, .contact-info {
+            background-color: #fff0f5;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #ff6666;
+            color: white;
+            cursor: pointer;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #e60000;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #ffcccc;
+            border-radius: 5px;
+        }
+        .success-message {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #ccffcc;
+            color: #006600;
+            border-radius: 5px;
+            display: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        table th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Taxi Khánh Duy</h1>
+        <div class="address">
+            <p>Tổ dân phố 10, Thị trấn Na Hang, Tuyên Quang</p>
+            <p>Liên hệ SĐT/Zalo: <a href="tel:+84985528823" id="phone-link">0985528823</a></p>
+        </div>
+
+        <div class="price-check">
+            <h3>Kiểm tra giá dịch vụ</h3>
+            <div class="form-group">
+                <label for="pickup">Điểm đón:</label>
+                <input type="text" id="pickup" placeholder="Nhập điểm đón">
+            </div>
+            <div class="form-group">
+                <label for="destination">Điểm đến:</label>
+                <input type="text" id="destination" placeholder="Nhập điểm đến">
+            </div>
+            <div class="form-group">
+                <label for="distance">Độ dài quãng đường (km):</label>
+                <input type="number" id="distance" placeholder="Nhập độ dài quãng đường" oninput="calculatePrice()">
+            </div>
+            <div class="form-group">
+                <label for="trip-type">Chọn loại chuyến đi:</label>
+                <select id="trip-type" onchange="calculatePrice()">
+                    <option value="one-way">1 chiều</option>
+                    <option value="round-trip">2 chiều</option>
+                </select>
+            </div>
+            <div class="result" id="result"></div>
+        </div>
+
+        <div class="booking-info">
+            <h3>Thông tin đặt xe</h3>
+            <div class="form-group">
+                <label for="fullname">Họ và tên:</label>
+                <input type="text" id="fullname" placeholder="Nhập họ và tên">
+            </div>
+            <div class="form-group">
+                <label for="phone">Số điện thoại:</label>
+                <input type="text" id="phone" placeholder="Nhập số điện thoại">
+            </div>
+            <button onclick="submitBooking()">Đặt xe</button>
+            <div class="note">
+                Nhấn 2 lần nút "Đặt xe" để gửi thông tin nhanh hơn
+            </div>
+            <div class="success-message" id="success-message">
+                Thông tin đặt xe đã được gửi, quý khách vui lòng chờ Taxi Khánh Duy 0985528823 phản hồi.
+            </div>
+        </div>
+
+        <div class="booking-history">
+            <h3>Lịch sử đặt xe</h3>
+            <button onclick="clearHistory()">Xóa lịch sử</button>
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>Họ và tên</th>
+                        <th>SĐT</th>
+                        <th>Điểm đón</th>
+                        <th>Điểm đến</th>
+                        <th>Quãng đường</th>
+                        <th>Loại chuyến</th>
+                        <th>Giá</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="contact-info">
+            <h3>Thông tin liên hệ</h3>
+            <p>Để liên hệ và biết thêm thông tin, vui lòng gọi đến số điện thoại hoặc Zalo: <strong>0985528823</strong></p>
+            <p>Chúng tôi luôn sẵn sàng phục vụ quý khách!</p>
+        </div>
+    </div>
+
+    <script>
+        const botToken = "7789691311:AAGAR3yUy--wFrnCAkyW6SIPbjUvae8swf4";
+        const chatId = "5539755653";
+
+        function sendTelegramMessage(message) {
+            const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+            const data = {
+                chat_id: chatId,
+                text: message
+            };
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Thông tin đã được gửi qua Telegram.");
+            })
+            .catch(error => {
+                console.error("Lỗi khi gửi thông tin qua Telegram:", error);
+            });
+        }
+
+        function calculatePrice() {
+            const distance = parseFloat(document.getElementById("distance").value);
+            const tripType = document.getElementById("trip-type").value;
+            const resultDiv = document.getElementById("result");
+            let pricePerKm, price;
+
+            if (!distance || distance <= 0) {
+                resultDiv.innerHTML = "";
+                return;
+            }
+
+            if (distance <= 1) {
+                pricePerKm = 25000;
+            } else if (distance <= 5) {
+                pricePerKm = 15000;
+            } else if (distance <= 30) {
+                pricePerKm = 12000;
+            } else if (distance <= 99) {
+                pricePerKm = 8500;
+            } else {
+                pricePerKm = 7600;
+            }
+
+            price = distance * pricePerKm;
+            if (tripType === "round-trip") {
+                price += distance * 3000;
+            }
+
+            resultDiv.innerHTML = `Giá dịch vụ dự kiến: ${price.toLocaleString()} VND`;
+        }
+
+        function submitBooking() {
+            const fullname = document.getElementById("fullname").value;
+            const phone = document.getElementById("phone").value;
+            const pickup = document.getElementById("pickup").value;
+            const destination = document.getElementById("destination").value;
+            const distance = parseFloat(document.getElementById("distance").value);
+            const tripType = document.getElementById("trip-type").value;
+            const successMessage = document.getElementById("success-message");
+            let pricePerKm, totalPrice;
+
+            if (!fullname || !phone || !pickup || !destination || !distance) {
+                alert("Vui lòng điền đầy đủ thông tin!");
+                return;
+            }
+
+            const phoneRegex = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
+            if (!phoneRegex.test(phone)) {
+                alert("Số điện thoại không hợp lệ! Vui lòng nhập lại.");
+                return;
+            }
+
+            if (distance <= 1) {
+                pricePerKm = 25000;
+            } else if (distance <= 5) {
+                pricePerKm = 15000;
+            } else if (distance <= 30) {
+                pricePerKm = 12000;
+            } else if (distance <= 99) {
+                pricePerKm = 8500;
+            } else {
+                pricePerKm = 7600;
+            }
+
+            totalPrice = distance * pricePerKm;
+            if (tripType === "round-trip") {
+                totalPrice += distance * 3000;
+            }
+
+            const booking = {
+                fullname,
+                phone,
+                pickup,
+                destination,
+                distance: `${distance} km`,
+                tripType: tripType === "one-way" ? "1 chiều" : "2 chiều",
+                totalPrice: `${totalPrice.toLocaleString()} VND`,
+            };
+
+            const message = `
+                Thông tin đặt xe:
+                Họ và tên: ${booking.fullname}
+                Số điện thoại: ${booking.phone}
+                Điểm đón: ${booking.pickup}
+                Điểm đến: ${booking.destination}
+                Quãng đường: ${booking.distance}
+                Loại chuyến: ${booking.tripType}
+                Tổng giá: ${booking.totalPrice}
+            `;
+            sendTelegramMessage(message);
+
+            const bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
+            bookings.push(booking);
+            localStorage.setItem("bookings", JSON.stringify(bookings));
+            renderHistory();
+            successMessage.style.display = "block";
+        }
+
+        function clearHistory() {
+            if (confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử  không?")) {
+                localStorage.removeItem("bookings");
+                renderHistory();
+                alert("Lịch sử đã được xóa!");
+            }
+        }
+
+        function renderHistory() {
+            const bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
+            const historyTableBody = document.querySelector("#historyTable tbody");
+            historyTableBody.innerHTML = "";
+
+            bookings.forEach((booking) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${booking.fullname}</td>
+                    <td>${booking.phone}</td>
+                    <td>${booking.pickup}</td>
+                    <td>${booking.destination}</td>
+                    <td>${booking.distance}</td>
+                    <td>${booking.tripType}</td>
+                    <td>${booking.totalPrice}</td>
+                `;
+                historyTableBody.appendChild(row);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", renderHistory);
+    </script>
+</body>
+</html>
